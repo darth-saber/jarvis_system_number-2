@@ -1,0 +1,660 @@
+// JARVIS Code Generator Frontend
+// Voice-activated code generation and file management
+
+class CodeGenerator {
+    constructor() {
+        this.isGenerating = false;
+        this.templates = null;
+        this.generatedFiles = [];
+        this.currentGeneration = null;
+        this.conversationContext = null;
+        
+        this.init();
+    }
+
+    async init() {
+        try {
+            await this.loadTemplates();
+            this.setupVoiceCommands();
+            this.setupEventListeners();
+            console.log('JARVIS: Code generator initialized');
+        } catch (error) {
+            console.error('JARVIS: Code generator initialization failed:', error);
+        }
+    }
+
+    async loadTemplates() {
+        try {
+            const response = await fetch('/api/get-templates');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.templates = data.templates;
+                console.log('JARVIS: Templates loaded successfully');
+            } else {
+                throw new Error(data.error || 'Failed to load templates');
+            }
+        } catch (error) {
+            console.error('JARVIS: Failed to load templates:', error);
+            this.templates = this.getDefaultTemplates();
+        }
+    }
+
+    getDefaultTemplates() {
+        return {
+            web: [
+                { id: 'html_basic', name: 'Basic HTML', description: 'Simple HTML5 template' },
+                { id: 'html_responsive', name: 'Responsive HTML', description: 'Responsive HTML5 with CSS' },
+                { id: 'css_basic', name: 'Basic CSS', description: 'Simple CSS stylesheet' },
+                { id: 'javascript_basic', name: 'Basic JavaScript', description: 'Simple JavaScript functionality' },
+                { id: 'react_component', name: 'React Component', description: 'Functional React component' }
+            ],
+            backend: [
+                { id: 'python_script', name: 'Python Script', description: 'Basic Python script template' },
+                { id: 'python_api', name: 'Python API', description: 'Flask API endpoint template' },
+                { id: 'node_js', name: 'Node.js Script', description: 'Basic Node.js script' }
+            ],
+            config: [
+                { id: 'json_config', name: 'JSON Configuration', description: 'JSON configuration file' },
+                { id: 'env_file', name: 'Environment File', description: '.env template' },
+                { id: 'yaml_config', name: 'YAML Configuration', description: 'YAML configuration file' }
+            ],
+            database: [
+                { id: 'sql_schema', name: 'SQL Schema', description: 'SQL database schema' }
+            ],
+            docs: [
+                { id: 'readme', name: 'README', description: 'Project README file' },
+                { id: 'api_docs', name: 'API Documentation', description: 'API documentation template' }
+            ]
+        };
+    }
+
+    setupVoiceCommands() {
+        // Listen for voice commands related to code generation
+        if (window.speechHandler) {
+            window.speechHandler.onVoiceCommand = (command) => {
+                this.handleVoiceCommand(command);
+            };
+        }
+    }
+
+    setupEventListeners() {
+        // Listen for keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            if (event.ctrlKey && event.key === 'g') {
+                event.preventDefault();
+                this.showCodeGenerationModal();
+            }
+        });
+
+        // Listen for UI events
+        document.addEventListener('click', (event) => {
+            if (event.target.matches('[data-code-action]')) {
+                const action = event.target.getAttribute('data-code-action');
+                this.handleCodeAction(action, event.target);
+            }
+        });
+    }
+
+    async handleVoiceCommand(command) {
+        const commandLower = command.toLowerCase();
+
+        // Code generation commands
+        if (this.isCodeGenerationCommand(commandLower)) {
+            await this.processCodeGenerationCommand(command);
+        }
+        
+        // File management commands
+        if (this.isFileManagementCommand(commandLower)) {
+            await this.processFileManagementCommand(command);
+        }
+    }
+
+    isCodeGenerationCommand(command) {
+        const codeKeywords = [
+            'create', 'generate', 'build', 'make', 'new', 'write',
+            'python', 'javascript', 'html', 'css', 'react', 'api',
+            'script', 'function', 'component', 'page', 'file'
+        ];
+        
+        return codeKeywords.some(keyword => command.includes(keyword));
+    }
+
+    isFileManagementCommand(command) {
+        const fileKeywords = [
+            'save', 'download', 'open', 'show', 'list', 'files',
+            'generated', 'previous', 'history'
+        ];
+        
+        return fileKeywords.some(keyword => command.includes(keyword));
+    }
+
+    async processCodeGenerationCommand(command) {
+        try {
+            this.showGeneratingIndicator();
+            
+            // Analyze requirements
+            const analysis = await this.analyzeRequirements(command);
+            
+            if (analysis.confidence > 0.6) {
+                // Generate code with recommended template
+                await this.generateCode(analysis.recommended_template, analysis.parameters);
+            } else {
+                // Ask for clarification
+                await this.askForClarification(command);
+            }
+            
+        } catch (error) {
+            console.error('JARVIS: Code generation error:', error);
+            this.speak("I encountered an error generating the code. Please try again.");
+        } finally {
+            this.hideGeneratingIndicator();
+        }
+    }
+
+    async analyzeRequirements(requirements) {
+        try {
+            const response = await fetch('/api/analyze-requirements', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requirements })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                return data.analysis;
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error('JARVIS: Requirements analysis failed:', error);
+            // Fallback to basic analysis
+            return this.basicRequirementsAnalysis(requirements);
+        }
+    }
+
+    basicRequirementsAnalysis(requirements) {
+        const requirementsLower = requirements.toLowerCase();
+        
+        // Simple keyword-based analysis
+        if (requirementsLower.includes('python')) {
+            return {
+                detected_technology: 'python',
+                template_type: 'basic',
+                parameters: {
+                    name: 'Python Script',
+                    description: requirements,
+                    ClassName: 'MainScript',
+                    methodName: 'main'
+                },
+                recommended_template: 'python_script',
+                confidence: 0.7
+            };
+        } else if (requirementsLower.includes('javascript') || requirementsLower.includes('react')) {
+            return {
+                detected_technology: 'javascript',
+                template_type: 'basic',
+                parameters: {
+                    name: 'JavaScript Component',
+                    description: requirements,
+                    ClassName: 'MainComponent'
+                },
+                recommended_template: 'javascript_basic',
+                confidence: 0.7
+            };
+        } else if (requirementsLower.includes('html')) {
+            return {
+                detected_technology: 'html',
+                template_type: 'basic',
+                parameters: {
+                    name: 'HTML Page',
+                    title: 'Generated Page',
+                    heading: 'Generated Page',
+                    content: requirements
+                },
+                recommended_template: 'html_basic',
+                confidence: 0.7
+            };
+        }
+        
+        // Default to basic HTML
+        return {
+            detected_technology: 'html',
+            template_type: 'basic',
+            parameters: {
+                name: 'Generated File',
+                title: 'Generated Page',
+                heading: 'Generated Page',
+                content: requirements
+            },
+            recommended_template: 'html_basic',
+            confidence: 0.5
+        };
+    }
+
+    async generateCode(templateId, parameters) {
+        try {
+            this.isGenerating = true;
+            this.currentGeneration = { templateId, parameters };
+            
+            const response = await fetch('/api/generate-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    template_id: templateId,
+                    parameters: parameters
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                await this.handleSuccessfulGeneration(result);
+            } else {
+                throw new Error(result.error);
+            }
+            
+        } catch (error) {
+            console.error('JARVIS: Code generation failed:', error);
+            this.speak(`I couldn't generate the code: ${error.message}`);
+        } finally {
+            this.isGenerating = false;
+            this.currentGeneration = null;
+        }
+    }
+
+    async handleSuccessfulGeneration(result) {
+        // Store the generated file
+        this.generatedFiles.push(result);
+        
+        // Update UI
+        this.showCodePreview(result);
+        
+        // Speak confirmation
+        this.speak(`I've generated a ${result.language} file called ${result.filename}. You can preview it or save it to your device.`);
+        
+        // Trigger animation
+        if (window.animationEngine) {
+            window.animationEngine.triggerAnimation('success');
+        }
+        
+        // Log the generation
+        this.logGeneration(result);
+    }
+
+    async askForClarification(command) {
+        const clarificationQuestions = [
+            "What type of file would you like me to create?",
+            "What programming language do you prefer?",
+            "Should this be a web page, script, or configuration file?",
+            "Do you need an API endpoint or just a basic template?"
+        ];
+        
+        const question = clarificationQuestions[Math.floor(Math.random() * clarificationQuestions.length)];
+        
+        this.speak(question);
+        
+        // Wait for user response (this would integrate with voice recognition)
+        this.conversationContext = {
+            type: 'clarification',
+            originalCommand: command,
+            timestamp: Date.now()
+        };
+    }
+
+    async processFileManagementCommand(command) {
+        const commandLower = command.toLowerCase();
+        
+        if (commandLower.includes('show') && commandLower.includes('files')) {
+            await this.showGeneratedFiles();
+        } else if (commandLower.includes('save') && commandLower.includes('last')) {
+            await this.saveLastGeneratedFile();
+        } else if (commandLower.includes('download')) {
+            await this.downloadLastGeneratedFile();
+        }
+    }
+
+    async showGeneratedFiles() {
+        try {
+            const response = await fetch('/api/get-generated-files');
+            const data = await response.json();
+            
+            if (data.success && data.files.length > 0) {
+                this.showFileListModal(data.files);
+                this.speak(`I found ${data.files.length} generated files. You can view them in the modal.`);
+            } else {
+                this.speak("I haven't generated any files yet. Try asking me to create something!");
+            }
+        } catch (error) {
+            console.error('JARVIS: Failed to load generated files:', error);
+            this.speak("I couldn't load the generated files. Please try again.");
+        }
+    }
+
+    async saveLastGeneratedFile() {
+        const lastFile = this.generatedFiles[this.generatedFiles.length - 1];
+        
+        if (lastFile) {
+            await this.saveFile(lastFile.id);
+        } else {
+            this.speak("I don't have any files to save yet.");
+        }
+    }
+
+    async downloadLastGeneratedFile() {
+        const lastFile = this.generatedFiles[this.generatedFiles.length - 1];
+        
+        if (lastFile) {
+            this.downloadFile(lastFile.content, lastFile.filename);
+            this.speak(`Downloading ${lastFile.filename} now.`);
+        } else {
+            this.speak("I don't have any files to download yet.");
+        }
+    }
+
+    async saveFile(fileId, customPath = null) {
+        try {
+            const response = await fetch('/api/save-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file_id: fileId, custom_path: customPath })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.speak(`File saved successfully to ${result.path}`);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('JARVIS: File save failed:', error);
+            this.speak(`I couldn't save the file: ${error.message}`);
+        }
+    }
+
+    downloadFile(content, filename) {
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url);
+    }
+
+    // UI Methods
+    showGeneratingIndicator() {
+        const indicator = document.getElementById('codeGenerationIndicator');
+        if (indicator) {
+            indicator.style.display = 'flex';
+            indicator.classList.add('generating');
+        }
+    }
+
+    hideGeneratingIndicator() {
+        const indicator = document.getElementById('codeGenerationIndicator');
+        if (indicator) {
+            indicator.classList.remove('generating');
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 1000);
+        }
+    }
+
+    showCodePreview(result) {
+        // Create or update code preview modal
+        this.createCodePreviewModal(result);
+    }
+
+    createCodePreviewModal(result) {
+        const modal = document.createElement('div');
+        modal.className = 'code-preview-modal';
+        modal.innerHTML = `
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Generated Code: ${result.filename}</h3>
+                        <button class="close-btn" onclick="this.closest('.code-preview-modal').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="code-preview">
+                            <div class="code-header">
+                                <span class="language-tag">${result.language.toUpperCase()}</span>
+                                <span class="template-used">Template: ${result.template_used}</span>
+                            </div>
+                            <pre><code class="language-${result.language}">${this.escapeHtml(result.content)}</code></pre>
+                        </div>
+                        <div class="code-actions">
+                            <button class="btn btn-primary" onclick="window.codeGenerator.downloadFile('${this.escapeHtml(result.content)}', '${result.filename}')">
+                                📥 Download
+                            </button>
+                            <button class="btn btn-secondary" onclick="window.codeGenerator.saveFile('${result.id}')">
+                                💾 Save
+                            </button>
+                            <button class="btn btn-tertiary" onclick="window.codeGenerator.regenerateCode()">
+                                🔄 Regenerate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add syntax highlighting if Prism.js is available
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    }
+
+    showFileListModal(files) {
+        const modal = document.createElement('div');
+        modal.className = 'file-list-modal';
+        modal.innerHTML = `
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Generated Files (${files.length})</h3>
+                        <button class="close-btn" onclick="this.closest('.file-list-modal').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="file-list">
+                            ${files.map(file => `
+                                <div class="file-item">
+                                    <span class="file-name">${file.filename}</span>
+                                    <span class="file-date">${new Date(file.created_at).toLocaleString()}</span>
+                                    <div class="file-actions">
+                                        <button class="btn-small" onclick="window.codeGenerator.viewFile('${file.id}')">👁️ View</button>
+                                        <button class="btn-small" onclick="window.codeGenerator.saveFile('${file.id}')">💾 Save</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    showCodeGenerationModal() {
+        const modal = document.createElement('div');
+        modal.className = 'code-generation-modal';
+        modal.innerHTML = `
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Generate Code File</h3>
+                        <button class="close-btn" onclick="this.closest('.code-generation-modal').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="template-selector">
+                            <h4>Choose Template:</h4>
+                            <div class="template-categories">
+                                ${this.renderTemplateCategories()}
+                            </div>
+                        </div>
+                        <div class="parameters-section">
+                            <h4>Customize:</h4>
+                            <div id="parameterInputs"></div>
+                        </div>
+                        <div class="generation-actions">
+                            <button class="btn btn-primary" onclick="window.codeGenerator.generateFromModal()">
+                                🚀 Generate Code
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    renderTemplateCategories() {
+        if (!this.templates) return '<p>Loading templates...</p>';
+        
+        return Object.entries(this.templates).map(([category, templates]) => `
+            <div class="template-category">
+                <h5>${category.charAt(0).toUpperCase() + category.slice(1)}</h5>
+                <div class="template-list">
+                    ${templates.map(template => `
+                        <div class="template-item" data-template-id="${template.id}" onclick="window.codeGenerator.selectTemplate('${template.id}')">
+                            <strong>${template.name}</strong>
+                            <p>${template.description}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    selectTemplate(templateId) {
+        // Highlight selected template
+        document.querySelectorAll('.template-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        const selectedItem = document.querySelector(`[data-template-id="${templateId}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('selected');
+        }
+        
+        // Show parameter inputs
+        this.showParameterInputs(templateId);
+    }
+
+    showParameterInputs(templateId) {
+        const container = document.getElementById('parameterInputs');
+        
+        // Generate parameter inputs based on template
+        const inputs = this.generateParameterInputs(templateId);
+        container.innerHTML = inputs;
+    }
+
+    generateParameterInputs(templateId) {
+        // This would be based on the template structure
+        return `
+            <div class="parameter-input">
+                <label for="fileName">File Name:</label>
+                <input type="text" id="fileName" placeholder="Enter file name">
+            </div>
+            <div class="parameter-input">
+                <label for="description">Description:</label>
+                <textarea id="description" placeholder="Describe what this file should do"></textarea>
+            </div>
+        `;
+    }
+
+    generateFromModal() {
+        const selectedTemplate = document.querySelector('.template-item.selected');
+        
+        if (!selectedTemplate) {
+            this.speak("Please select a template first.");
+            return;
+        }
+        
+        const templateId = selectedTemplate.getAttribute('data-template-id');
+        const parameters = this.getModalParameters();
+        
+        this.generateCode(templateId, parameters);
+        
+        // Close modal
+        document.querySelector('.code-generation-modal').remove();
+    }
+
+    getModalParameters() {
+        return {
+            name: document.getElementById('fileName')?.value || 'Generated File',
+            description: document.getElementById('description')?.value || 'Generated by JARVIS AI'
+        };
+    }
+
+    viewFile(fileId) {
+        // Find the file and show its preview
+        const file = this.generatedFiles.find(f => f.id === fileId);
+        if (file) {
+            this.showCodePreview(file);
+        }
+    }
+
+    regenerateCode() {
+        if (this.currentGeneration) {
+            this.generateCode(this.currentGeneration.templateId, this.currentGeneration.parameters);
+        }
+    }
+
+    logGeneration(result) {
+        // Log generation to console for debugging
+        console.log('JARVIS: Code generation completed:', {
+            filename: result.filename,
+            language: result.language,
+            template: result.template_used,
+            timestamp: result.timestamp
+        });
+    }
+
+    speak(text) {
+        if (window.speechHandler) {
+            window.speechHandler.speak(text);
+        }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Public API
+    isReady() {
+        return !this.isGenerating && this.templates !== null;
+    }
+
+    getStats() {
+        return {
+            totalGenerated: this.generatedFiles.length,
+            templatesAvailable: Object.values(this.templates || {}).flat().length,
+            lastGeneration: this.generatedFiles[this.generatedFiles.length - 1]?.timestamp
+        };
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.codeGenerator = new CodeGenerator();
+});
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = CodeGenerator;
+}
+

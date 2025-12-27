@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS - Just A Rather Very Intelligent System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="jarvis-container">
+        <!-- Main Interface -->
+        <div class="main-interface">
+            <!-- Status Display -->
+            <div class="status-panel">
+                <div class="system-status">
+                    <span class="status-indicator"></span>
+                    <span class="status-text">JARVIS Online</span>
+                </div>
+                <div class="system-time" id="systemTime"></div>
+            </div>
+
+            <!-- Core Interface -->
+            <div class="core-interface">
+                <!-- Main Display -->
+                <div class="main-display">
+                    <div class="jarvis-logo">
+                        <div class="logo-ring ring-1"></div>
+                        <div class="logo-ring ring-2"></div>
+                        <div class="logo-ring ring-3"></div>
+                        <div class="center-core">
+                            <span>JARVIS</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Speech Recognition Indicator -->
+                    <div class="speech-indicator" id="speechIndicator">
+                        <div class="pulse-ring"></div>
+                        <div class="pulse-ring delay-1"></div>
+                        <div class="pulse-ring delay-2"></div>
+                        <div class="microphone-icon">🎤</div>
+                    </div>
+
+                    <!-- Wake Word Detection Indicator -->
+                    <div class="wake-word-indicator" id="wakeWordIndicator"></div>
+                </div>
+
+                <!-- Command Display -->
+                <div class="command-display">
+                    <div class="command-text" id="commandText">How may I assist you today?</div>
+                    <div class="response-text" id="responseText"></div>
+                </div>
+
+                <!-- System Metrics -->
+                <div class="system-metrics">
+                    <div class="metric">
+                        <span class="metric-label">CPU</span>
+                        <span class="metric-value" id="cpuUsage">0%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Memory</span>
+                        <span class="metric-value" id="memoryUsage">0%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Network</span>
+                        <span class="metric-value" id="networkStatus">Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <button class="control-btn voice-btn" id="voiceBtn">
+                    <span class="btn-icon">🎤</span>
+                    <span class="btn-text">Voice Command</span>
+                </button>
+                <button class="control-btn code-generation-btn" id="codeGenerationBtn" data-code-generation>
+                    <span class="btn-icon">💻</span>
+                    <span class="btn-text">Code Generator</span>
+                </button>
+                <button class="control-btn search-btn" id="searchBtn">
+                    <span class="btn-icon">🔍</span>
+                    <span class="btn-text">Web Search</span>
+                </button>
+                <button class="control-btn system-btn" id="systemBtn">
+                    <span class="btn-icon">⚙️</span>
+                    <span class="btn-text">System Info</span>
+                </button>
+                <button class="control-btn file-btn" id="fileBtn">
+                    <span class="btn-icon">📁</span>
+                    <span class="btn-text">File Manager</span>
+                </button>
+            </div>
+
+            <!-- Search Interface -->
+            <div class="search-interface" id="searchInterface" style="display: none;">
+                <input type="text" class="search-input" id="searchInput" placeholder="What would you like to search for?">
+                <button class="search-execute" id="searchExecute">Search</button>
+                <button class="search-close" id="searchClose">✕</button>
+            </div>
+
+            <!-- File Manager Interface -->
+            <div class="file-manager" id="fileManager" style="display: none;">
+                <div class="file-manager-header">
+                    <h3>File System</h3>
+                    <button class="close-btn" id="fileManagerClose">✕</button>
+                </div>
+                <div class="file-tree" id="fileTree"></div>
+            </div>
+
+            <!-- System Info Interface -->
+            <div class="system-info" id="systemInfo" style="display: none;">
+                <div class="system-info-header">
+                    <h3>System Information</h3>
+                    <button class="close-btn" id="systemInfoClose">✕</button>
+                </div>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h4>System Time</h4>
+                        <p id="detailedTime"></p>
+                    </div>
+                    <div class="info-card">
+                        <h4>User</h4>
+                        <p id="userInfo"></p>
+                    </div>
+                    <div class="info-card">
+                        <h4>Browser</h4>
+                        <p id="browserInfo"></p>
+                    </div>
+                    <div class="info-card">
+                        <h4>Screen Resolution</h4>
+                        <p id="screenInfo"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Background Effects -->
+        <div class="background-effects">
+            <div class="particle particle-1"></div>
+            <div class="particle particle-2"></div>
+            <div class="particle particle-3"></div>
+            <div class="particle particle-4"></div>
+            <div class="particle particle-5"></div>
+        </div>
+
+        <!-- Voice Processing Indicators -->
+        <div class="voice-processing-indicators">
+            <div class="voice-indicator" id="voiceActivityIndicator">
+                <span>Voice Activity</span>
+                <div class="voice-activity-bar">
+                    <div class="voice-activity-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="voice-indicator" id="confidenceIndicator">
+                <span>Confidence</span>
+                <span class="confidence-indicator" id="confidenceValue">0%</span>
+            </div>
+            <div class="voice-indicator" id="commandFeedback">
+                <span id="commandFeedbackText"></span>
+            </div>
+        </div>
+
+        <!-- Continuous Listening Indicator -->
+        <div class="continuous-listening-indicator" id="continuousListeningIndicator">
+            <div>🎤 Continuous Listening</div>
+            <div style="font-size: 12px; margin-top: 5px;">Speak naturally...</div>
+        </div>
+
+        <!-- Code Generation Indicator -->
+        <div class="code-generation-indicator" id="codeGenerationIndicator">
+            <div class="spinner"></div>
+            <span>Generating Code...</span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="jarvis-core.js"></script>
+    <script src="wake-word.js"></script>
+    <script src="enhanced-voice.js"></script>
+    <script src="animation-engine.js"></script>
+    <script src="error-handler.js"></script>
+    <script src="mobile-optimizer.js"></script>
+    <script src="speech-handler.js"></script>
+    <script src="ui-manager.js"></script>
+    <script src="system-monitor.js"></script>
+    <script src="code-generator.js"></script>
+</body>
+</html>
